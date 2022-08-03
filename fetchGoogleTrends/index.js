@@ -33,7 +33,6 @@ exports.handler = async (event) => {
     break;
   }
 
-
   const params = {
     DelaySeconds: 10,
     MessageAttributes: {
