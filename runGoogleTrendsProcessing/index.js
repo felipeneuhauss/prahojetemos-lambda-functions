@@ -8,7 +8,7 @@ const saveDataIntoStrapi = async (payload) => {
     'https://prahojetemos-strapi.herokuapp.com/api/top-news', {data: payload},
     {
       headers: {
-        authorization: `Bearer ${process.env.STRAPI_API_TOKEN || 'b17635c87011d23a8daf317b4dccd60d82334d07bb3cbf7a52b85dc942fd891f72cbbb61460e166d157a16bf96cec1e619e12c2d17bceb53e574aa8c3117321cd50948cbb3e0da679018ff7d62f83e8a5713fe4d4d144c5659dc4c2737d8a2b07c267d40203b7c78b64aa8501971e67f8f1dd29d1d5bea0b19b02abe435b57c0'}`
+        authorization: `Bearer ${process.env.STRAPI_API_TOKEN}`
       }
     });
   console.log('Top news saved:', responseData);
