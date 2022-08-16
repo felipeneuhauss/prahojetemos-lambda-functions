@@ -1,28 +1,29 @@
 const googleTrends = require('google-trends-api');
+
 const AWS = require('aws-sdk');
 
 AWS.config.update({ region: 'us-east-1' });
 
 const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
 
-exports.handler = async (event) => {
+const handler = async (event) => {
+  console.log('Event:', JSON.stringify(event));
+
   const realTimeTrends = await googleTrends.realTimeTrends({
     category: 'h',
     geo: 'BR',
   });
 
   const trendList = JSON.parse(realTimeTrends).storySummaries
-    ?.trendingStories.filter((trendingStory) =>
-      trendingStory.articles.length > 2);
+    ?.trendingStories.filter((trendingStory) => trendingStory.articles.length > 2);
 
-  // Mandar a noticia do g1
   let g1Article;
   let selectedTrend;
 
   for (let trend of trendList) {
     if (!g1Article) {
       for (let article of trend.articles) {
-        if (article.url.includes('globo.com')) {
+        if (article.url.includes('g1.globo.com')) {
           g1Article = article;
           break;
         }
@@ -33,34 +34,28 @@ exports.handler = async (event) => {
     break;
   }
 
-  const params = {
-    DelaySeconds: 10,
-    MessageAttributes: {
-      title: {
-        DataType: 'String',
-        StringValue: g1Article.articleTitle
-      },
-      url: {
-        DataType: 'String',
-        StringValue: g1Article.url
-      },
-      description: {
-        DataType: 'String',
-        StringValue: g1Article.snippet
-      },
-      imageUrl: {
-        DataType: 'String',
-        StringValue: selectedTrend.image.imgUrl,
-      }
-    },
-    MessageBody: 'TopNews sent to be processed and saved in the Strapi CMS.',
-    QueueUrl: 'https://sqs.us-east-1.amazonaws.com/503662028996/processTopNews'
-  };
+  const payload = {
+    DelaySeconds: 0,
+    MessageBody: JSON.stringify({
+      title: g1Article.articleTitle,
+      description: g1Article.snippet,
+      imageUrl: selectedTrend.image.imgUrl,
+      url: g1Article.url
+    }),
+    QueueUrl: 'https://sqs.us-east-1.amazonaws.com/503662028996/callProcessTopNewsToStrapi',
+  }
 
   try {
-    const data = await sqs.sendMessage(params).promise()
-    console.log('Message successufully sent', data);
-  } catch (err) {
-    console.log('err:', err);
+    const data = await sqs.sendMessage(payload).promise()
+    console.log('Message sent', data.MessageId);
+  } catch (e) {
+    console.log('Message error:', e.stack);
   }
+  // TODO implement
+  return {
+    statusCode: 200,
+    body: JSON.stringify('Hello from Lambda!'),
+  };
 };
+
+handler();
